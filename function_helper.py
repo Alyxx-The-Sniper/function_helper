@@ -316,38 +316,91 @@ def download_data_V2(txtfile, source, destination, food_list=[], random_seed=42)
         
         for n in data_sample:
             copy(os.path.join(source, i, n), os.path.join(destination, i, n))
+            
+            
+#################################################################################################
+#################################################################################################
+# new code 2024
+#################################################################################################
 #################################################################################################
 
+# Function to copy and unzip
+import zipfile
+import os
+from tqdm import tqdm
+
+def copy_and_unzip(zip_file_path, extract_to_path):
+    with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+        # Get the total number of files to extract for the progress bar
+        total_files = sum(1 for _ in zip_ref.infolist())
+
+        # Reset the progress bar
+        progress_bar = tqdm(zip_ref.infolist(), desc='Extracting', unit='file', total=total_files)
+
+        # Extract each file while updating the progress bar
+        for file_info in progress_bar:
+            zip_ref.extract(file_info, extract_to_path)
+
+    print(f"Successfully extracted {zip_file_path} to {extract_to_path}")
 
 
+#################################################################################################
+# function for data spit
+import os
+from sklearn.model_selection import train_test_split
+from shutil import copytree, copyfile
+from tqdm.auto import tqdm
 
+def split_dataset_with_classes(source_folder, cat_split_folder, min_samples=10, test_size=0.2, random_state=42):
+    # Create destination folders if they don't exist
+    train_folder = os.path.join(cat_split_folder, 'train')
+    test_folder = os.path.join(cat_split_folder, 'test')
+    os.makedirs(train_folder, exist_ok=True)
+    os.makedirs(test_folder, exist_ok=True)
 
+    # Get the list of class subdirectories in the source folder
+    class_subdirectories = [os.path.join(source_folder, subdir) for subdir in os.listdir(source_folder) if os.path.isdir(os.path.join(source_folder, subdir))]
 
+    # Calculate the total number of files to copy
+    total_files = sum(len(os.listdir(class_directory)) for class_directory in class_subdirectories)
 
+    # Create a single line progress bar for all the progress
+    progress_bar = tqdm(total=total_files, desc="Copying files", unit="file", leave=False)
 
+    for class_directory in class_subdirectories:
+        # Get the list of files in the current class folder
+        class_files = os.listdir(class_directory)
 
+        # Check if the class has enough samples
+        if len(class_files) >= min_samples:
+            # Extract class name from the subdirectory path
+            class_name = os.path.basename(class_directory)
 
+            # Create class-specific folders in train and test sets
+            train_class_path = os.path.join(train_folder, class_name)
+            test_class_path = os.path.join(test_folder, class_name)
+            os.makedirs(train_class_path, exist_ok=True)
+            os.makedirs(test_class_path, exist_ok=True)
 
+            # Split the class dataset into training and testing sets
+            train_files, test_files = train_test_split(class_files, test_size=test_size, random_state=random_state)
 
+            # Copy files to the corresponding class folders in train and test sets
+            for file in train_files + test_files:
+                src_path = os.path.join(class_directory, file)
+                dst_path = os.path.join(train_class_path, file) if file in train_files else os.path.join(test_class_path, file)
 
+                if os.path.isdir(src_path):
+                    copytree(src_path, dst_path)
+                else:
+                    copyfile(src_path, dst_path)
 
+                progress_bar.update(1)
 
+        else:
+            print(f"Skipping class {class_directory} due to insufficient samples.")
 
+    progress_bar.close()
+    print(f"Split dataset into train and test sets. Train set: {train_folder}, Test set: {test_folder}.")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#################################################################################################
