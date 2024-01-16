@@ -405,7 +405,6 @@ def split_dataset_with_classes(source_folder, cat_split_folder, min_samples=10, 
 
 #################################################################################################
 
-
 # Create a function to return a list of dictionaries with sample, label, prediction, pred prob
 from tqdm.auto import tqdm
 def pred_and_store(test_paths, model, transform, class_names, device):
